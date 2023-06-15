@@ -1,8 +1,7 @@
-
 import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showinfo
-
+import numpy as np
 import sqlite3
 
 from sqlite3 import Error
@@ -96,18 +95,18 @@ tree.insert('', tk.END, text='Ver Profesores', iid=6, open=False)
 tree.insert('', tk.END, text='Nro de tesis por Profesor', iid=5, open=False)
 tree.insert('', tk.END, text='Detalle Profesor-Tesis', iid=7, open=False)
 tree.insert('', tk.END, text='Promedio Notas Profesor Tesis', iid=15, open=False)
+tree.insert('', tk.END, text='Distribución de Notas de los Profesores', iid=20, open=False)
 
 tree.move(5, 0, 1)
 tree.move(6, 0, 0)
 tree.move(7, 0, 2)
 tree.move(15, 0, 3)
+tree.move(20, 0, 4)
 
 # adicina hijos al segundo nodo SUBMENÚ ALUMNOS
-tree.insert('', tk.END, text='Ver Alumnos', iid=10, open=False)
-tree.insert('', tk.END, text='Insertar Alumno', iid=9, open=False)
+tree.insert('', tk.END, text='Ver Alumnos', iid=8, open=False)
+
 tree.move(8, 1, 2)
-tree.move(9, 1, 1)
-tree.move(10, 1, 0)
 #tree.move(4, 1, 3)
 
 
@@ -116,11 +115,13 @@ tree.insert('', tk.END, text='Ver Tesis', iid=13, open=False)
 tree.insert('', tk.END, text='Tesis Notas del comite', iid=11, open=False)
 tree.insert('', tk.END, text='Tesis Notas', iid=12, open=False)
 tree.insert('', tk.END, text='Tesis Mejores Resultados', iid=16, open=False)
+tree.insert('', tk.END, text='Distribución de Situaciones Tesis', iid=21, open=False)
 
 tree.move(11, 2, 2)
 tree.move(12, 2, 1)
 tree.move(13, 2, 0)
 tree.move(16, 2, 3)
+tree.move(21, 2, 4)
 
 # __________Item escogido ___________________________
 def item_selected(event):
@@ -208,12 +209,36 @@ def item_selected(event):
 
             # Mostrar los resultados en la tabla
             crear_tabla(resDato, columnas, 'Promedio Notas Profesor Tesis')
+
+        if nombreOpcion == 'Distribución de Notas de los Profesores':
+            # Consulta para obtener las notas de los profesores
+            notas_query = "SELECT notaDocumento, notaDefensa FROM Miembros_Comite"
+            notas_data = sql_fetch(con, notas_query)
+
+            # Obtener las notas de documento y defensa en listas separadas
+            notas_documento = [row[0] for row in notas_data]
+            notas_defensa = [row[1] for row in notas_data]
+
+            # Calcular la nota final como promedio de las notas de documento y defensa
+            notas_final = np.mean([notas_documento, notas_defensa], axis=0)
+
+            # Calcular la distribución de notas utilizando histograma
+            histograma, bins = np.histogram(notas_final, bins=[0,4, 5, 6, 7])
+
+            # Mostrar la distribución de notas
+            for i in range(len(histograma)):
+                nota_inferior = bins[i]
+                nota_superior = bins[i + 1]
+                frecuencia = histograma[i]
+                porcentaje = (frecuencia / len(notas_final)) * 100
+                print(f"Notas entre {nota_inferior} y {nota_superior}: {porcentaje}%")
 # Alumnos
         if nombreOpcion=='Ver Alumnos'  :
                 resDato=sql_fetch(con,"SELECT idAlumno,rut,nombre, descripción FROM alumnos, carreras WHERE alumnos.idCarrera = carreras.idCarrera")
                 #showinfo(title='Selección', message="Nodo : "+str(item))
                 columnas = ('ID', 'RUT', 'Nombre','CARRERA')
                 crear_tabla(resDato, columnas, 'ALUMNOS')
+
 # Tesis
         if nombreOpcion=='Ver Tesis'  :
                 resDato=sql_fetch(con,"SELECT tesis.IdTesis, alumnos.nombre, alumnos.rut, areasestudio.descripción_area, estadostesis.descripción_estado FROM Tesis JOIN alumnos ON tesis.IdAlumno = alumnos.IdAlumno JOIN estadostesis ON tesis.IdSituación = estadostesis.IdSituación  JOIN areasestudio ON tesis.idArea = areasestudio.IdTema;")
@@ -300,6 +325,38 @@ def item_selected(event):
             # Mostrar los resultados en la tabla
             crear_tabla(resDato, columnas, 'TESIS MEJORES RESULTADOS')
 
+        if nombreOpcion == 'Distribución de Situaciones Tesis':
+            # Tabla EstadosTesis
+            estados_tesis = np.array([
+                [1, 'Presentación'],
+                [2, 'Revisión'],
+                [3, 'Graduado']
+            ])
+
+            # Tabla Tesis
+            tesis = np.array([
+                [1, 1, 1, 1],
+                [2, 2, 2, 1],
+                [3, 3, 3, 1]
+            ])
+
+            # Calcular el número total de tesis
+            total_tesis = len(tesis)
+
+            # Calcular el número de tesis en cada estado
+            num_tesis_presentacion = np.sum(tesis[:, 3] == 1)
+            num_tesis_revision = np.sum(tesis[:, 3] == 2)
+            num_tesis_graduado = np.sum(tesis[:, 3] == 3)
+
+            # Calcular el porcentaje de tesis en cada estado
+            porcentaje_presentacion = (num_tesis_presentacion / total_tesis) * 100
+            porcentaje_revision = (num_tesis_revision / total_tesis) * 100
+            porcentaje_graduado = (num_tesis_graduado / total_tesis) * 100
+
+            # Imprimir los resultados
+            print(f"Porcentaje de tesis en Presentación: {porcentaje_presentacion}%")
+            print(f"Porcentaje de tesis en Revisión: {porcentaje_revision}%")
+            print(f"Porcentaje de tesis Graduado: {porcentaje_graduado}%")
 # ____________control de la opcion escogida____________________
 tree.bind('<<TreeviewSelect>>', item_selected)
 
