@@ -95,10 +95,12 @@ tree.insert('', tk.END, text='Tesis', iid=2, open=False)
 tree.insert('', tk.END, text='Ver Profesores', iid=6, open=False)
 tree.insert('', tk.END, text='Nro de tesis por Profesor', iid=5, open=False)
 tree.insert('', tk.END, text='Detalle Profesor-Tesis', iid=7, open=False)
+tree.insert('', tk.END, text='Promedio Notas Profesor Tesis', iid=15, open=False)
 
 tree.move(5, 0, 1)
 tree.move(6, 0, 0)
 tree.move(7, 0, 2)
+tree.move(15, 0, 3)
 
 # adicina hijos al segundo nodo SUBMENÚ ALUMNOS
 tree.insert('', tk.END, text='Ver Alumnos', iid=10, open=False)
@@ -112,8 +114,8 @@ tree.move(10, 1, 0)
 
 # adicina hijos al segundo nodo SUBMENÚ TESIS
 tree.insert('', tk.END, text='Ver Tesis', iid=13, open=False)
-tree.insert('', tk.END, text='ESTADO', iid=11, open=False)
-tree.insert('', tk.END, text='Insertar TESIS', iid=12, open=False)
+tree.insert('', tk.END, text='Tesis Notas', iid=11, open=False)
+tree.insert('', tk.END, text='Tesis Mejores Resultados', iid=12, open=False)
 
 tree.move(11, 2, 2)
 tree.move(12, 2, 1)
@@ -130,6 +132,7 @@ def item_selected(event):
         imagen = item['image']
         abierto = item['open']
 
+# Profesores
         if nombreOpcion == 'Ver Profesores':
             # Obtener los datos de los profesores
             profesores_query = "SELECT idProfesor, rut, nombre FROM Profesores"
@@ -184,18 +187,78 @@ def item_selected(event):
 
             # Mostrar los resultados en la tabla
             crear_tabla(resDato, columnas, 'Detalle Profesor-Tesis')
+        
+        if nombreOpcion == 'Promedio Notas Profesor Tesis':
+            # Obtener los datos de los profesores y su promedio de notas
+            promedio_query = "SELECT Profesores.nombre, AVG(Miembros_Comite.notaDocumento) AS Promedio_Nota " \
+                            "FROM Profesores " \
+                            "JOIN Miembros_Comite ON Profesores.idProfesor = Miembros_Comite.idProfesor " \
+                            "GROUP BY Profesores.idProfesor"
+            promedio_data = sql_fetch(con, promedio_query)
 
+            # Mostrar los resultados en la tabla
+            columnas = ('Nombre Profesor', 'Promedio de Notas')
+            resDato = []
+
+            for promedio_row in promedio_data:
+                resDato.append(promedio_row)
+
+            # Mostrar los resultados en la tabla
+            crear_tabla(resDato, columnas, 'Promedio Notas Profesor Tesis')
+# Alumnos
         if nombreOpcion=='Ver Alumnos'  :
                 resDato=sql_fetch(con,"SELECT idAlumno,rut,nombre, descripción FROM alumnos, carreras WHERE alumnos.idCarrera = carreras.idCarrera")
                 #showinfo(title='Selección', message="Nodo : "+str(item))
                 columnas = ('ID', 'RUT', 'Nombre','CARRERA')
                 crear_tabla(resDato, columnas, 'ALUMNOS')
-
+# Tesis
         if nombreOpcion=='Ver Tesis'  :
                 resDato=sql_fetch(con,"SELECT tesis.IdTesis, alumnos.nombre, alumnos.rut, areasestudio.descripción_area, estadostesis.descripción_estado FROM Tesis JOIN alumnos ON tesis.IdAlumno = alumnos.IdAlumno JOIN estadostesis ON tesis.IdSituación = estadostesis.IdSituación  JOIN areasestudio ON tesis.idArea = areasestudio.IdTema;")
                 #showinfo(title='Selección', message="Nodo : "+str(item))
                 columnas=('ID', 'Nombre Alumno', 'Rut Alumno','Área', 'Estado Tesis')
                 crear_tabla(resDato, columnas, 'TESIS')
+
+        if nombreOpcion == 'Tesis Notas':
+            # Obtener los datos de las tesis y sus notas
+            tesis_query = "SELECT Tesis.IdTesis, AreasEstudio.Descripción_Area, Miembros_Comite.notaDocumento, Miembros_Comite.notaDefensa " \
+                        "FROM Tesis " \
+                        "JOIN Comite ON Tesis.IdTesis = Comite.idTesis " \
+                        "JOIN Miembros_Comite ON Comite.idComite = Miembros_Comite.idComite " \
+                        "JOIN AreasEstudio ON Tesis.idArea = AreasEstudio.IdTema"
+            tesis_data = sql_fetch(con, tesis_query)
+
+            # Mostrar los resultados en la tabla
+            columnas = ('ID Tesis', 'Descripción del Área', 'Nota Documento', 'Nota Defensa')
+            resDato = []
+
+            for tesis_row in tesis_data:
+                resDato.append(tesis_row)
+
+            # Mostrar los resultados en la tabla
+            crear_tabla(resDato, columnas, 'TESIS Y NOTAS')
+
+        if nombreOpcion == 'Tesis Mejores Resultados':
+            # Obtener los datos de las tesis con mejores resultados
+            resultados_query = "SELECT Tesis.IdTesis, Alumnos.nombre, AreasEstudio.Descripción_Area, Profesores.nombre, Miembros_Comite.notaDocumento, Miembros_Comite.notaDefensa " \
+                            "FROM Tesis " \
+                            "JOIN Alumnos ON Tesis.idAlumno = Alumnos.idAlumno " \
+                            "JOIN Comite ON Tesis.idTesis = Comite.idTesis " \
+                            "JOIN Miembros_Comite ON Comite.idComite = Miembros_Comite.idComite " \
+                            "JOIN Profesores ON Miembros_Comite.idProfesor = Profesores.idProfesor " \
+                            "JOIN AreasEstudio ON Tesis.idArea = AreasEstudio.IdTema " \
+                            "ORDER BY (Miembros_Comite.notaDocumento + Miembros_Comite.notaDefensa) DESC " \
+                            "LIMIT 2"
+            resultados_data = sql_fetch(con, resultados_query)
+
+            # Mostrar los resultados en la tabla
+            columnas = ('Título de la Tesis', 'Nombre del Alumno', 'Descripción del Área', 'Profesor Asociado', 'Nota Documento', 'Nota Defensa')
+            resDato = []
+
+            for resultado_row in resultados_data:
+                resDato.append(resultado_row)
+
+            # Mostrar los resultados en la tabla
+            crear_tabla(resDato, columnas, 'TESIS MEJORES RESULTADOS')
 
 # ____________control de la opcion escogida____________________
 tree.bind('<<TreeviewSelect>>', item_selected)
