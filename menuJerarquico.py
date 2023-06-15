@@ -93,8 +93,8 @@ tree.insert('', tk.END, text='Tesis', iid=2, open=False)
 #tree.insert('', tk.END, text='', iid=4, open=False)
 # adiciona hijos al primer nodo SUBMENÚ PROFESORES
 tree.insert('', tk.END, text='Ver Profesores', iid=6, open=False)
-tree.insert('', tk.END, text='Nro de tesis Guias', iid=5, open=False)
-tree.insert('', tk.END, text='Existentes', iid=7, open=False)
+tree.insert('', tk.END, text='Nro de tesis por Profesor', iid=5, open=False)
+tree.insert('', tk.END, text='Detalle Profesor-Tesis', iid=7, open=False)
 
 tree.move(5, 0, 1)
 tree.move(6, 0, 0)
@@ -132,40 +132,58 @@ def item_selected(event):
 
         if nombreOpcion == 'Ver Profesores':
             # Obtener los datos de los profesores
-            profesores_query = "SELECT * FROM Profesores"
+            profesores_query = "SELECT idProfesor, rut, nombre FROM Profesores"
             profesores_data = sql_fetch(con, profesores_query)
 
-            # Obtener los datos de las tesis asociadas a los profesores
-            tesis_query = "SELECT Profesores.idProfesor, Profesores.nombre, Profesores.rut, Tesis.idTesis " \
-                        "FROM Profesores " \
-                        "LEFT JOIN Miembros_Comite ON Profesores.idProfesor = Miembros_Comite.idProfesor " \
-                        "JOIN Comite ON Miembros_Comite.idComite = Comite.idComite " \
-                        "JOIN Tesis ON Comite.idTesis = Tesis.idTesis"
-            tesis_data = sql_fetch(con, tesis_query)
-
-            # Combinar los resultados de profesores y tesis
-            columnas = ('ID Profesor', 'Nombre Profesor', 'RUT Profesor', 'Cantidad de Tesis')
+            # Mostrar los resultados en la tabla
+            columnas = ('ID Profesor', 'RUT Profesor', 'Nombre Profesor')
             resDato = []
 
             for profesor_row in profesores_data:
-                profesor_id = profesor_row[0]
-                profesor_nombre = profesor_row[2]
-                profesor_rut = profesor_row[1]
-                profesor_tesis = []
-
-                # Buscar las tesis asociadas al profesor actual
-                for tesis_row in tesis_data:
-                    if tesis_row[0] == profesor_id:
-                        profesor_tesis.append(tesis_row[3])
-
-                # Obtener la cantidad de tesis del profesor
-                cantidad_tesis = len(profesor_tesis)
-
-                # Agregar el profesor y la cantidad de tesis a los resultados
-                resDato.append((profesor_id, profesor_nombre, profesor_rut, cantidad_tesis))
+                resDato.append(profesor_row)
 
             # Mostrar los resultados en la tabla
             crear_tabla(resDato, columnas, 'PROFESORES')
+
+        if nombreOpcion == 'Nro de tesis por Profesor':
+            # Obtener los datos de los profesores y la cantidad de tesis
+            tesis_query = "SELECT Profesores.nombre, COUNT(Tesis.idTesis) AS Cantidad_Tesis " \
+                          "FROM Profesores " \
+                          "LEFT JOIN Miembros_Comite ON Profesores.idProfesor = Miembros_Comite.idProfesor " \
+                          "JOIN Comite ON Miembros_Comite.idComite = Comite.idComite " \
+                          "JOIN Tesis ON Comite.idTesis = Tesis.idTesis " \
+                          "GROUP BY Profesores.idProfesor"
+            tesis_data = sql_fetch(con, tesis_query)
+
+            # Mostrar los resultados en la tabla
+            columnas = ('Nombre Profesor', 'Cantidad de Tesis')
+            resDato = []
+
+            for tesis_row in tesis_data:
+                resDato.append(tesis_row)
+
+            # Mostrar los resultados en la tabla
+            crear_tabla(resDato, columnas, 'Nro de tesis por Profesor')
+
+        if nombreOpcion == 'Detalle Profesor-Tesis':
+            # Obtener los datos de los profesores y sus tesis asociadas
+            profesores_query = "SELECT Profesores.nombre, AreasEstudio.Descripción_Area " \
+                               "FROM Profesores " \
+                               "LEFT JOIN Miembros_Comite ON Profesores.idProfesor = Miembros_Comite.idProfesor " \
+                               "JOIN Comite ON Miembros_Comite.idComite = Comite.idComite " \
+                               "JOIN Tesis ON Comite.idTesis = Tesis.idTesis " \
+                               "JOIN AreasEstudio ON Tesis.idArea = AreasEstudio.IdTema"
+            profesores_data = sql_fetch(con, profesores_query)
+
+            # Mostrar los resultados en la tabla
+            columnas = ('Nombre Profesor', 'Descripción del Área')
+            resDato = []
+
+            for profesor_row in profesores_data:
+                resDato.append(profesor_row)
+
+            # Mostrar los resultados en la tabla
+            crear_tabla(resDato, columnas, 'Detalle Profesor-Tesis')
 
         if nombreOpcion=='Ver Alumnos'  :
                 resDato=sql_fetch(con,"SELECT idAlumno,rut,nombre, descripción FROM alumnos, carreras WHERE alumnos.idCarrera = carreras.idCarrera")
