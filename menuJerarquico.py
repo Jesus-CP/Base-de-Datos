@@ -114,12 +114,14 @@ tree.move(10, 1, 0)
 
 # adicina hijos al segundo nodo SUBMENÚ TESIS
 tree.insert('', tk.END, text='Ver Tesis', iid=13, open=False)
-tree.insert('', tk.END, text='Tesis Notas', iid=11, open=False)
-tree.insert('', tk.END, text='Tesis Mejores Resultados', iid=12, open=False)
+tree.insert('', tk.END, text='Tesis Notas del comite', iid=11, open=False)
+tree.insert('', tk.END, text='Tesis Notas', iid=12, open=False)
+tree.insert('', tk.END, text='Tesis Mejores Resultados', iid=16, open=False)
 
 tree.move(11, 2, 2)
 tree.move(12, 2, 1)
 tree.move(13, 2, 0)
+tree.move(16, 2, 3)
 
 # __________Item escogido ___________________________
 def item_selected(event):
@@ -189,19 +191,21 @@ def item_selected(event):
             crear_tabla(resDato, columnas, 'Detalle Profesor-Tesis')
         
         if nombreOpcion == 'Promedio Notas Profesor Tesis':
-            # Obtener los datos de los profesores y su promedio de notas
-            promedio_query = "SELECT Profesores.nombre, AVG(Miembros_Comite.notaDocumento) AS Promedio_Nota " \
-                            "FROM Profesores " \
-                            "JOIN Miembros_Comite ON Profesores.idProfesor = Miembros_Comite.idProfesor " \
-                            "GROUP BY Profesores.idProfesor"
-            promedio_data = sql_fetch(con, promedio_query)
+            # Obtener los datos de las tesis y sus notas
+            tesis_query = "SELECT Profesores.Nombre, AVG((Miembros_Comite.notaDocumento + Miembros_Comite.notaDefensa) / 2) AS Promedio " \
+                        "FROM Tesis " \
+                        "JOIN Comite ON Tesis.IdTesis = Comite.idTesis " \
+                        "JOIN Miembros_Comite ON Comite.idComite = Miembros_Comite.idComite " \
+                        "JOIN Profesores ON Miembros_Comite.idProfesor = Profesores.idProfesor " \
+                        "GROUP BY Profesores.Nombre"
+            tesis_data = sql_fetch(con, tesis_query)
 
             # Mostrar los resultados en la tabla
-            columnas = ('Nombre Profesor', 'Promedio de Notas')
+            columnas = ('Profesor', 'Promedio Notas')
             resDato = []
 
-            for promedio_row in promedio_data:
-                resDato.append(promedio_row)
+            for tesis_row in tesis_data:
+                resDato.append(tesis_row)
 
             # Mostrar los resultados en la tabla
             crear_tabla(resDato, columnas, 'Promedio Notas Profesor Tesis')
@@ -218,24 +222,52 @@ def item_selected(event):
                 columnas=('ID', 'Nombre Alumno', 'Rut Alumno','Área', 'Estado Tesis')
                 crear_tabla(resDato, columnas, 'TESIS')
 
-        if nombreOpcion == 'Tesis Notas':
+        if nombreOpcion == 'Tesis Notas del comite':
             # Obtener los datos de las tesis y sus notas
-            tesis_query = "SELECT Tesis.IdTesis, AreasEstudio.Descripción_Area, Miembros_Comite.notaDocumento, Miembros_Comite.notaDefensa " \
+            tesis_query = "SELECT Tesis.IdTesis, AreasEstudio.Descripción_Area, Miembros_Comite.notaDocumento, " \
+                        "Miembros_Comite.notaDefensa, Profesores.Nombre " \
                         "FROM Tesis " \
                         "JOIN Comite ON Tesis.IdTesis = Comite.idTesis " \
                         "JOIN Miembros_Comite ON Comite.idComite = Miembros_Comite.idComite " \
-                        "JOIN AreasEstudio ON Tesis.idArea = AreasEstudio.IdTema"
+                        "JOIN AreasEstudio ON Tesis.idArea = AreasEstudio.IdTema " \
+                        "JOIN Profesores ON Miembros_Comite.idProfesor = Profesores.idProfesor"
             tesis_data = sql_fetch(con, tesis_query)
 
             # Mostrar los resultados en la tabla
-            columnas = ('ID Tesis', 'Descripción del Área', 'Nota Documento', 'Nota Defensa')
+            columnas = ('ID Tesis', 'Descripción del Área', 'Nota Documento', 'Nota Defensa', 'Profesor')
             resDato = []
 
             for tesis_row in tesis_data:
                 resDato.append(tesis_row)
 
             # Mostrar los resultados en la tabla
-            crear_tabla(resDato, columnas, 'TESIS Y NOTAS')
+            crear_tabla(resDato, columnas, 'TESIS NOTAS DEL COMITE')
+        
+        if nombreOpcion == 'Tesis Notas':
+            # Obtener el promedio de notas por título de tesis
+            promedio_query = "SELECT Tesis.IdTesis, AreasEstudio.Descripción_Area, Alumnos.Nombre, " \
+                            "AVG((Miembros_Comite.notaDocumento + Miembros_Comite.notaDefensa) / 2) AS Promedio " \
+                            "FROM Tesis " \
+                            "JOIN Comite ON Tesis.IdTesis = Comite.idTesis " \
+                            "JOIN Miembros_Comite ON Comite.idComite = Miembros_Comite.idComite " \
+                            "JOIN AreasEstudio ON Tesis.idArea = AreasEstudio.IdTema " \
+                            "JOIN Alumnos ON Tesis.idAlumno = Alumnos.idAlumno " \
+                            "GROUP BY Tesis.IdTesis"
+            promedio_data = sql_fetch(con, promedio_query)
+
+            # Mostrar los resultados en la tabla
+            columnas = ('ID Tesis', 'Descripción del Área', 'Alumno', 'Promedio Notas')
+            resDato = []
+
+            for promedio_row in promedio_data:
+                id_tesis = promedio_row[0]
+                area_estudio = promedio_row[1]
+                alumno = promedio_row[2]
+                promedio = promedio_row[3]
+                resDato.append((id_tesis, area_estudio, alumno, promedio))
+
+            # Mostrar los resultados en la tabla
+            crear_tabla(resDato, columnas, 'TESIS NOTAS')
 
         if nombreOpcion == 'Tesis Mejores Resultados':
             # Obtener los datos de las tesis con mejores resultados
