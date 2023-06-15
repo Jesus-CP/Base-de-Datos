@@ -129,12 +129,6 @@ def item_selected(event):
         nombreOpcion = item['text']
         imagen = item['image']
         abierto = item['open']
-    
-        if nombreOpcion=='Ver Tesis'  :
-                resDato=sql_fetch(con,"SELECT tesis.IdTesis, alumnos.rut, alumnos.nombre, areasestudio.descripción_area, estadostesis.descripción_estado FROM Tesis JOIN alumnos ON tesis.IdAlumno = alumnos.IdAlumno JOIN estadostesis ON tesis.IdSituación = estadostesis.IdSituación  JOIN areasestudio ON tesis.idArea = areasestudio.IdTema;")
-                #showinfo(title='Selección', message="Nodo : "+str(item))
-                columnas=('ID', 'Nombre Alumno', 'Rut Alumno','Área', 'Estado Tesis')
-                crear_tabla(resDato, columnas, 'TESIS')
 
         if nombreOpcion=='Ver Profesores'  :
                 resDato=sql_fetch(con,"SELECT * FROM profesores")
@@ -147,6 +141,12 @@ def item_selected(event):
                 #showinfo(title='Selección', message="Nodo : "+str(item))
                 columnas = ('ID', 'RUT', 'Nombre','CARRERA')
                 crear_tabla(resDato, columnas, 'ALUMNOS')
+
+        if nombreOpcion=='Ver Tesis'  :
+                resDato=sql_fetch(con,"SELECT tesis.IdTesis, alumnos.nombre, alumnos.rut, areasestudio.descripción_area, estadostesis.descripción_estado FROM Tesis JOIN alumnos ON tesis.IdAlumno = alumnos.IdAlumno JOIN estadostesis ON tesis.IdSituación = estadostesis.IdSituación  JOIN areasestudio ON tesis.idArea = areasestudio.IdTema;")
+                #showinfo(title='Selección', message="Nodo : "+str(item))
+                columnas=('ID', 'Nombre Alumno', 'Rut Alumno','Área', 'Estado Tesis')
+                crear_tabla(resDato, columnas, 'TESIS')
 
 # ____________control de la opcion escogida____________________
 tree.bind('<<TreeviewSelect>>', item_selected)
