@@ -104,7 +104,6 @@ tree.move(15, 0, 3)
 
 # adicina hijos al segundo nodo SUBMENÚ ALUMNOS
 tree.insert('', tk.END, text='Ver Alumnos', iid=10, open=False)
-tree.insert('', tk.END, text='Carrera', iid=8, open=False)
 tree.insert('', tk.END, text='Insertar Alumno', iid=9, open=False)
 tree.move(8, 1, 2)
 tree.move(9, 1, 1)
@@ -270,24 +269,33 @@ def item_selected(event):
             crear_tabla(resDato, columnas, 'TESIS NOTAS')
 
         if nombreOpcion == 'Tesis Mejores Resultados':
-            # Obtener los datos de las tesis con mejores resultados
-            resultados_query = "SELECT Tesis.IdTesis, Alumnos.nombre, AreasEstudio.Descripción_Area, Profesores.nombre, Miembros_Comite.notaDocumento, Miembros_Comite.notaDefensa " \
+            # Obtener el promedio de notas por título de tesis
+            promedio_query = "SELECT Tesis.IdTesis, AreasEstudio.Descripción_Area, Alumnos.Nombre, " \
+                            "AVG((Miembros_Comite.notaDocumento + Miembros_Comite.notaDefensa) / 2) AS Promedio " \
                             "FROM Tesis " \
-                            "JOIN Alumnos ON Tesis.idAlumno = Alumnos.idAlumno " \
-                            "JOIN Comite ON Tesis.idTesis = Comite.idTesis " \
+                            "JOIN Comite ON Tesis.IdTesis = Comite.idTesis " \
                             "JOIN Miembros_Comite ON Comite.idComite = Miembros_Comite.idComite " \
-                            "JOIN Profesores ON Miembros_Comite.idProfesor = Profesores.idProfesor " \
                             "JOIN AreasEstudio ON Tesis.idArea = AreasEstudio.IdTema " \
-                            "ORDER BY (Miembros_Comite.notaDocumento + Miembros_Comite.notaDefensa) DESC " \
-                            "LIMIT 2"
-            resultados_data = sql_fetch(con, resultados_query)
+                            "JOIN Alumnos ON Tesis.idAlumno = Alumnos.idAlumno " \
+                            "GROUP BY Tesis.IdTesis"
+            promedio_data = sql_fetch(con, promedio_query)
 
             # Mostrar los resultados en la tabla
-            columnas = ('Título de la Tesis', 'Nombre del Alumno', 'Descripción del Área', 'Profesor Asociado', 'Nota Documento', 'Nota Defensa')
+            columnas = ('ID Tesis', 'Descripción del Área', 'Alumno', 'Promedio Notas')
             resDato = []
 
-            for resultado_row in resultados_data:
-                resDato.append(resultado_row)
+            for promedio_row in promedio_data:
+                id_tesis = promedio_row[0]
+                area_estudio = promedio_row[1]
+                alumno = promedio_row[2]
+                promedio = promedio_row[3]
+                resDato.append((id_tesis, area_estudio, alumno, promedio))
+
+            # Ordenar los resultados por el promedio de notas de forma descendente
+            resDato.sort(key=lambda x: x[3], reverse=True)
+
+            # Mostrar solo las dos primeras filas (las mejores notas)
+            resDato = resDato[:2]
 
             # Mostrar los resultados en la tabla
             crear_tabla(resDato, columnas, 'TESIS MEJORES RESULTADOS')
