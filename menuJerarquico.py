@@ -223,15 +223,21 @@ def item_selected(event):
             notas_final = np.mean([notas_documento, notas_defensa], axis=0)
 
             # Calcular la distribución de notas utilizando histograma
-            histograma, bins = np.histogram(notas_final, bins=[0,4, 5, 6, 7])
+            histograma, bins = np.histogram(notas_final, bins=[0, 4, 5, 6, 7])
 
-            # Mostrar la distribución de notas
+            # Crear una tabla con la distribución de notas
+            tabla_notas = []
             for i in range(len(histograma)):
                 nota_inferior = bins[i]
                 nota_superior = bins[i + 1]
                 frecuencia = histograma[i]
                 porcentaje = (frecuencia / len(notas_final)) * 100
-                print(f"Notas entre {nota_inferior} y {nota_superior}: {porcentaje}%")
+                tabla_notas.append([f"Notas entre {nota_inferior} y {nota_superior}", porcentaje])
+
+            # Mostrar la tabla
+            columnas = ('Rango de Notas', 'Porcentaje')
+            crear_tabla(tabla_notas, columnas, 'Distribución de Notas de los Profesores')
+
 # Alumnos
         if nombreOpcion=='Ver Alumnos'  :
                 resDato=sql_fetch(con,"SELECT idAlumno,rut,nombre, descripción FROM alumnos, carreras WHERE alumnos.idCarrera = carreras.idCarrera")
@@ -353,10 +359,16 @@ def item_selected(event):
             porcentaje_revision = (num_tesis_revision / total_tesis) * 100
             porcentaje_graduado = (num_tesis_graduado / total_tesis) * 100
 
-            # Imprimir los resultados
-            print(f"Porcentaje de tesis en Presentación: {porcentaje_presentacion}%")
-            print(f"Porcentaje de tesis en Revisión: {porcentaje_revision}%")
-            print(f"Porcentaje de tesis Graduado: {porcentaje_graduado}%")
+            # Crear una tabla con la información
+            tabla_situaciones = [
+                ['Presentación', porcentaje_presentacion],
+                ['Revisión', porcentaje_revision],
+                ['Graduado', porcentaje_graduado]
+            ]
+
+            # Mostrar la tabla
+            columnas = ('Situación', 'Porcentaje')
+            crear_tabla(tabla_situaciones, columnas, 'Distribución de Situaciones Tesis')
 # ____________control de la opcion escogida____________________
 tree.bind('<<TreeviewSelect>>', item_selected)
 
