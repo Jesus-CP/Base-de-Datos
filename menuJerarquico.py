@@ -130,11 +130,42 @@ def item_selected(event):
         imagen = item['image']
         abierto = item['open']
 
-        if nombreOpcion=='Ver Profesores'  :
-                resDato=sql_fetch(con,"SELECT * FROM profesores")
-                #showinfo(title='Selección', message="Se mostrarán todos los alumnos")
-                columnas=('ID', 'Nombre', 'RUT')
-                crear_tabla(resDato, columnas, 'PROFESORES')
+        if nombreOpcion == 'Ver Profesores':
+            # Obtener los datos de los profesores
+            profesores_query = "SELECT * FROM Profesores"
+            profesores_data = sql_fetch(con, profesores_query)
+
+            # Obtener los datos de las tesis asociadas a los profesores
+            tesis_query = "SELECT Profesores.idProfesor, Profesores.nombre, Profesores.rut, Tesis.idTesis " \
+                        "FROM Profesores " \
+                        "LEFT JOIN Miembros_Comite ON Profesores.idProfesor = Miembros_Comite.idProfesor " \
+                        "JOIN Comite ON Miembros_Comite.idComite = Comite.idComite " \
+                        "JOIN Tesis ON Comite.idTesis = Tesis.idTesis"
+            tesis_data = sql_fetch(con, tesis_query)
+
+            # Combinar los resultados de profesores y tesis
+            columnas = ('ID Profesor', 'Nombre Profesor', 'RUT Profesor', 'Cantidad de Tesis')
+            resDato = []
+
+            for profesor_row in profesores_data:
+                profesor_id = profesor_row[0]
+                profesor_nombre = profesor_row[2]
+                profesor_rut = profesor_row[1]
+                profesor_tesis = []
+
+                # Buscar las tesis asociadas al profesor actual
+                for tesis_row in tesis_data:
+                    if tesis_row[0] == profesor_id:
+                        profesor_tesis.append(tesis_row[3])
+
+                # Obtener la cantidad de tesis del profesor
+                cantidad_tesis = len(profesor_tesis)
+
+                # Agregar el profesor y la cantidad de tesis a los resultados
+                resDato.append((profesor_id, profesor_nombre, profesor_rut, cantidad_tesis))
+
+            # Mostrar los resultados en la tabla
+            crear_tabla(resDato, columnas, 'PROFESORES')
 
         if nombreOpcion=='Ver Alumnos'  :
                 resDato=sql_fetch(con,"SELECT idAlumno,rut,nombre, descripción FROM alumnos, carreras WHERE alumnos.idCarrera = carreras.idCarrera")
